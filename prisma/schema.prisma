@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model OvocieAZeleniny {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model Grilovanie {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model Pecivo {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model MasoRybyALahodky {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model MliecneVyrobkyAVajcia {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model TrvanlivePotraviny {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model SpecialnaAZdravaVyziva {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model MrazenePotraviny {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model Napoje {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model Alkohol {
+  id                  Int         @id @default(autoincrement())
+  productId           String
+  title               String
+  price               Float
+  unitPrice           Float
+  imageUrl            String
+  unitOfMeasure       String
+  isForSale           Boolean
+  aisleName           String
+  promotions          Promotion[]
+  lastUpdated         DateTime
+  category            String
+  superDepartmentName String
+
+  @@unique([productId, lastUpdated])
+}
+
+model Promotion {
+  id                       Int                     @id @default(autoincrement())
+  promotionId              String
+  promotionType            String
+  startDate                DateTime
+  endDate                  DateTime
+  offerText                String
+  attributes               String[]
+  ovocieAZeleniny          OvocieAZeleniny?        @relation(fields: [ovocieAZeleninyId], references: [id])
+  ovocieAZeleninyId        Int?
+  grilovanie               Grilovanie?             @relation(fields: [grilovanieId], references: [id])
+  grilovanieId             Int?
+  mliecneVyrobkyAVajcia    MliecneVyrobkyAVajcia?  @relation(fields: [mliecneVyrobkyAVajciaId], references: [id])
+  mliecneVyrobkyAVajciaId  Int?
+  pecivo                   Pecivo?                 @relation(fields: [pecivoId], references: [id])
+  pecivoId                 Int?
+  masoRybyALahodky         MasoRybyALahodky?       @relation(fields: [masoRybyALahodkyId], references: [id])
+  masoRybyALahodkyId       Int?
+  trvanlivePotraviny       TrvanlivePotraviny?     @relation(fields: [trvanlivePotravinyId], references: [id])
+  trvanlivePotravinyId     Int?
+  specialnaAZdravaVyziva   SpecialnaAZdravaVyziva? @relation(fields: [specialnaAZdravaVyzivaId], references: [id])
+  specialnaAZdravaVyzivaId Int?
+  mrazenePotraviny         MrazenePotraviny?       @relation(fields: [mrazenePotravinyId], references: [id])
+  mrazenePotravinyId       Int?
+  napoje                   Napoje?                 @relation(fields: [napojeId], references: [id])
+  napojeId                 Int?
+  alkohol                  Alkohol?                @relation(fields: [alkoholId], references: [id])
+  alkoholId                Int?
+}
