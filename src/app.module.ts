@@ -26,7 +26,7 @@ import { AlkoholService } from './alkohol/alkohol.service';
 
 @Module({
   imports: [HttpModule],
-  controllers: [OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController],
-  providers: [OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService],
+  controllers: [AppController, OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController],
+  providers: [AppService, OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService],
 })
 export class AppModule { }
