@@ -132,21 +132,31 @@ export class AlkoholService {
         }
     }
 
-    async getProducts(update: boolean, page: number, pageSize: number): Promise<AlkoholResponseDto> {
+    async getProducts(update: boolean, page: number, pageSize: number, sale?: boolean): Promise<AlkoholResponseDto> {
         if (update) {
             const productsFromApi = await this.fetchProductsFromApi();
             await this.saveProductsToDb(productsFromApi);
         }
+
+        const whereClause: any = { category: 'alkohol' };
+        if (sale !== undefined) {
+            if (sale) {
+                whereClause.promotions = { some: {} };
+            } else {
+                whereClause.promotions = { none: {} };
+            }
+        }
+
         const [productsFromDb, totalProducts] = await this.prisma.$transaction([
             this.prisma.alkohol.findMany({
-                where: { category: 'alkohol' },
+                where: whereClause,
                 include: { promotions: true },
                 orderBy: { lastUpdated: 'desc' },
                 skip: (page - 1) * pageSize,
                 take: pageSize
             }),
             this.prisma.alkohol.count({
-                where: { category: 'alkohol' }
+                where: whereClause
             })
         ]);
 
