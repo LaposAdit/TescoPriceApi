@@ -1,11 +1,9 @@
-
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from 'src/prisma.service';
 import { defaultHeaders } from 'src/common/header';
 import { AlkoholResponseDto, AlkoholTransformedProductDto, PromotionDto } from 'src/dto/AlkoholDTO';
-
 
 @Injectable()
 export class AlkoholService {
@@ -18,11 +16,9 @@ export class AlkoholService {
         this.cookies = ''; // Initialize cookies
     }
 
-
     private async fetchProductsFromApi(): Promise<AlkoholTransformedProductDto[]> {
-
         const url = 'https://potravinydomov.itesco.sk/groceries/sk-SK/resources';
-        const headers = { ...defaultHeaders }
+        const headers = { ...defaultHeaders };
 
         let allProducts: AlkoholTransformedProductDto[] = [];
         let count = 48;
@@ -52,9 +48,9 @@ export class AlkoholService {
             try {
                 console.log(`Fetching products with page: ${page}`); // Log the page number for each request
                 const response = await firstValueFrom(this.httpService.post(url, body, { headers }));
-                const transformedData = this.transformData(response.data);
-                allProducts = allProducts.concat(transformedData.products);
-                morePages = allProducts.length < transformedData.totalProducts;
+                const transformedProducts = this.transformData(response.data);
+                allProducts = allProducts.concat(transformedProducts);
+                morePages = allProducts.length < response.data.productsByCategory.data.results.pageInformation.totalCount;
                 page += 1;
                 console.log(`Total products fetched so far: ${allProducts.length}`); // Log the total products fetched so far
             } catch (error) {
@@ -66,14 +62,14 @@ export class AlkoholService {
         return allProducts;
     }
 
-    private transformData(data: any): AlkoholResponseDto {
+    private transformData(data: any): AlkoholTransformedProductDto[] {
         const productItems = data.productsByCategory.data.results.productItems;
 
         if (!productItems) {
             throw new Error('Unexpected response structure');
         }
 
-        const transformedProducts: AlkoholTransformedProductDto[] = productItems.map((item: any) => {
+        return productItems.map((item: any) => {
             const product = item.product;
             const promotions: PromotionDto[] = item.promotions?.map((promo: any) => ({
                 promotionId: promo.promotionId,
@@ -98,11 +94,6 @@ export class AlkoholService {
                 lastUpdated: new Date()
             };
         });
-
-        return {
-            totalProducts: data.productsByCategory.data.results.pageInformation.totalCount,
-            products: transformedProducts,
-        };
     }
 
     private async saveProductsToDb(products: AlkoholTransformedProductDto[]) {
@@ -119,7 +110,7 @@ export class AlkoholService {
                         unitOfMeasure: product.unitOfMeasure,
                         isForSale: product.isForSale,
                         aisleName: product.aisleName,
-                        category: "alkohol",
+                        category: 'alkohol',
                         superDepartmentName: product.superDepartmentName,
                         promotions: {
                             create: product.promotions.map(promo => ({
@@ -159,6 +150,8 @@ export class AlkoholService {
             })
         ]);
 
+        const totalPages = Math.ceil(totalProducts / pageSize);
+
         const transformedProducts = productsFromDb.map(product => ({
             productId: product.productId,
             title: product.title,
@@ -177,10 +170,11 @@ export class AlkoholService {
                 offerText: promo.offerText,
                 attributes: promo.attributes
             })),
-            lastUpdated: product.lastUpdated
+            lastUpdated: product.lastUpdated,
         }));
 
         return {
+            totalPages,
             totalProducts,
             products: transformedProducts
         };
@@ -213,9 +207,4 @@ export class AlkoholService {
             lastUpdated: product.lastUpdated
         }));
     }
-
-
-
-
-
 }

@@ -23,5 +23,6 @@ export class AlkoholTransformedProductDto {
 
 export class AlkoholResponseDto {
     totalProducts: number;
+    totalPages: number;
     products: AlkoholTransformedProductDto[];
 }
