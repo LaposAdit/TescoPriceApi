@@ -19,9 +19,11 @@ export class PecivoTransformedProductDto {
     promotions: PromotionDto[];
     lastUpdated: Date;
     superDepartmentName: string;
+    hasPromotions: boolean; // Add this line
 }
 
 export class PecivoResponseDto {
     totalProducts: number;
+    totalPages: number;
     products: PecivoTransformedProductDto[];
 }

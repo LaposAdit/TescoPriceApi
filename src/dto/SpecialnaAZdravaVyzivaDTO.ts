@@ -19,9 +19,11 @@ export class SpecialnaAZdravaVyzivaTransformedProductDto {
     promotions: PromotionDto[];
     lastUpdated: Date;
     superDepartmentName: string;
+    hasPromotions: boolean; // Add this line
 }
 
 export class SpecialnaAZdravaVyzivaResponseDto {
     totalProducts: number;
+    totalPages: number;
     products: SpecialnaAZdravaVyzivaTransformedProductDto[];
 }

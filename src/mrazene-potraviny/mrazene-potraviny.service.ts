@@ -50,9 +50,9 @@ export class MrazenePotravinyService {
             try {
                 console.log(`Fetching products with page: ${page}`); // Log the page number for each request
                 const response = await firstValueFrom(this.httpService.post(url, body, { headers }));
-                const transformedData = this.transformData(response.data);
-                allProducts = allProducts.concat(transformedData.products);
-                morePages = allProducts.length < transformedData.totalProducts;
+                const transformedProducts = this.transformData(response.data);
+                allProducts = allProducts.concat(transformedProducts);
+                morePages = allProducts.length < response.data.productsByCategory.data.results.pageInformation.totalCount;
                 page += 1;
                 console.log(`Total products fetched so far: ${allProducts.length}`); // Log the total products fetched so far
             } catch (error) {
@@ -64,14 +64,14 @@ export class MrazenePotravinyService {
         return allProducts;
     }
 
-    private transformData(data: any): MrazenePotravinyResponseDto {
+    private transformData(data: any): MrazenePotravinyTransformedProductDto[] {
         const productItems = data.productsByCategory.data.results.productItems;
 
         if (!productItems) {
             throw new Error('Unexpected response structure');
         }
 
-        const transformedProducts: MrazenePotravinyTransformedProductDto[] = productItems.map((item: any) => {
+        return productItems.map((item: any) => {
             const product = item.product;
             const promotions: PromotionDto[] = item.promotions?.map((promo: any) => ({
                 promotionId: promo.promotionId,
@@ -93,15 +93,12 @@ export class MrazenePotravinyService {
                 aisleName: product.aisleName,
                 superDepartmentName: product.superDepartmentName,
                 promotions,
+                hasPromotions: promotions.length > 0,
                 lastUpdated: new Date()
             };
         });
-
-        return {
-            totalProducts: data.productsByCategory.data.results.pageInformation.totalCount,
-            products: transformedProducts,
-        };
     }
+
 
     private async saveProductsToDb(products: MrazenePotravinyTransformedProductDto[]) {
         for (const product of products) {
@@ -117,8 +114,9 @@ export class MrazenePotravinyService {
                         unitOfMeasure: product.unitOfMeasure,
                         isForSale: product.isForSale,
                         aisleName: product.aisleName,
-                        category: "mrazene-potraviny",
+                        category: 'mrazene-potraviny',
                         superDepartmentName: product.superDepartmentName,
+                        hasPromotions: product.hasPromotions,
                         promotions: {
                             create: product.promotions.map(promo => ({
                                 promotionId: promo.promotionId,
@@ -140,16 +138,36 @@ export class MrazenePotravinyService {
     }
 
 
-    async getProducts(update: boolean): Promise<MrazenePotravinyResponseDto> {
+    async getProducts(update: boolean, page: number, pageSize: number, sale?: boolean): Promise<MrazenePotravinyResponseDto> {
         if (update) {
             const productsFromApi = await this.fetchProductsFromApi();
             await this.saveProductsToDb(productsFromApi);
         }
-        const productsFromDb = await this.prisma.mrazenePotraviny.findMany({
-            where: { category: 'mrazene-potraviny' }, // Add this line
-            include: { promotions: true },
-            orderBy: { lastUpdated: 'desc' }
-        });
+
+        const whereClause: any = { category: 'mrazene-potraviny' };
+
+        // Assuming `sale` is a string that can be "true" or "false"
+        if (sale !== undefined) {
+            // Convert string to boolean
+            const saleBoolean = String(sale).toLowerCase() === 'true';
+            whereClause.hasPromotions = saleBoolean;
+        }
+
+        const [productsFromDb, totalProducts] = await this.prisma.$transaction([
+            this.prisma.mrazenePotraviny.findMany({
+                where: whereClause,
+                include: { promotions: true },
+                orderBy: { lastUpdated: 'desc' },
+                skip: (page - 1) * pageSize,
+                take: pageSize
+            }),
+            this.prisma.mrazenePotraviny.count({
+                where: whereClause
+            })
+        ]);
+
+        const totalPages = Math.ceil(totalProducts / pageSize);
+
         const transformedProducts = productsFromDb.map(product => ({
             productId: product.productId,
             title: product.title,
@@ -168,12 +186,20 @@ export class MrazenePotravinyService {
                 offerText: promo.offerText,
                 attributes: promo.attributes
             })),
-            lastUpdated: product.lastUpdated
+            hasPromotions: product.promotions.length > 0,
+            lastUpdated: product.lastUpdated,
         }));
+
         return {
-            totalProducts: transformedProducts.length,
+            totalPages,
+            totalProducts,
             products: transformedProducts
         };
+    }
+
+    async updateProductsFromApi(): Promise<void> {
+        const productsFromApi = await this.fetchProductsFromApi();
+        await this.saveProductsToDb(productsFromApi);
     }
 
     async getProductById(productId: string): Promise<MrazenePotravinyTransformedProductDto[]> {
@@ -200,6 +226,7 @@ export class MrazenePotravinyService {
                 offerText: promo.offerText,
                 attributes: promo.attributes
             })),
+            hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated
         }));
     }

@@ -19,9 +19,11 @@ export class GrillovaneTransformedProductDto {
     promotions: PromotionDto[];
     lastUpdated: Date;
     superDepartmentName: string;
+    hasPromotions: boolean; // Add this line
 }
 
 export class GrilovanieResponseDto {
     totalProducts: number;
+    totalPages: number;
     products: GrillovaneTransformedProductDto[];
 }

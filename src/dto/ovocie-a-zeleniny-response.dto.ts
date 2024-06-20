@@ -19,9 +19,11 @@ export class OvocieAZeleninyTransformedProductDto {
     promotions: PromotionDto[];
     lastUpdated: Date;
     superDepartmentName: string;
+    hasPromotions: boolean; // Add this line
 }
 
 export class OvocieAZeleninyResponseDto {
     totalProducts: number;
+    totalPages: number;
     products: OvocieAZeleninyTransformedProductDto[];
 }

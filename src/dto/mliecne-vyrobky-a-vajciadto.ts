@@ -19,9 +19,11 @@ export class MliecneVyrobkyAVajciaTransformedProductDto {
     promotions: PromotionDto[];
     lastUpdated: Date;
     superDepartmentName: string;
+    hasPromotions: boolean; // Add this line
 }
 
 export class MliecneVyrobkyAVajciaResponseDto {
     totalProducts: number;
+    totalPages: number;
     products: MliecneVyrobkyAVajciaTransformedProductDto[];
 }

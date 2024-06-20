@@ -19,9 +19,11 @@ export class MasoRybyALahodkyTransformedProductDto {
     promotions: PromotionDto[];
     lastUpdated: Date;
     superDepartmentName: string;
+    hasPromotions: boolean; // Add this line
 }
 
 export class MasoRybyALahodkyResponseDto {
     totalProducts: number;
+    totalPages: number;
     products: MasoRybyALahodkyTransformedProductDto[];
 }

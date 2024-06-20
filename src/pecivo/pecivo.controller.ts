@@ -1,5 +1,5 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import { ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { PecivoService } from './pecivo.service';
 import { PecivoResponseDto, PecivoTransformedProductDto } from 'src/dto/pecivodto';
 
@@ -8,17 +8,31 @@ import { PecivoResponseDto, PecivoTransformedProductDto } from 'src/dto/pecivodt
 export class PecivoController {
     constructor(private readonly pecivoService: PecivoService) { }
 
+
+
+
     @Get()
+    @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
+    @ApiQuery({ name: 'pageSize', required: false, description: 'Number of items per page', type: Number })
+    @ApiQuery({ name: 'sale', required: false, description: 'Filter by sale', type: Boolean })
     @ApiResponse({ status: 200, description: 'The products have been successfully fetched from the database.', type: PecivoResponseDto })
-    async getProductsFromDb(): Promise<PecivoResponseDto> {
-        return this.pecivoService.getProducts(false);
+    async getProductsFromDb(
+        @Query('page') page = 1,
+        @Query('pageSize') pageSize = 25,
+        @Query('sale') sale?: string // Change type to string to handle conversion
+    ): Promise<PecivoResponseDto> {
+        const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
+        return this.pecivoService.getProducts(false, Number(page), Number(pageSize), saleBoolean);
     }
 
     @Get('update')
-    @ApiResponse({ status: 200, description: 'The products have been successfully fetched from the API, updated in the database, and returned.', type: PecivoResponseDto })
-    async updateAndGetProducts(): Promise<PecivoResponseDto> {
-        return this.pecivoService.getProducts(true);
+    @ApiResponse({ status: 200, description: 'The products have been successfully updated from the API.' })
+    async updateAndGetProducts(): Promise<{ message: string }> {
+        await this.pecivoService.updateProductsFromApi();
+        return { message: 'The products have been successfully updated from the API.' };
     }
+
+
 
     @Get(':productId')
     @ApiResponse({ status: 200, description: 'The product history has been successfully fetched from the database.', type: [PecivoTransformedProductDto] })

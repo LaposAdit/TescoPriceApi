@@ -19,9 +19,11 @@ export class NapojeTransformedProductDto {
     promotions: PromotionDto[];
     lastUpdated: Date;
     superDepartmentName: string;
+    hasPromotions: boolean; // Add this line
 }
 
 export class NapojeResponseDto {
     totalProducts: number;
+    totalPages: number;
     products: NapojeTransformedProductDto[];
 }
