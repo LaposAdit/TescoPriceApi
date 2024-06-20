@@ -141,17 +141,24 @@ export class AlkoholService {
         }
     }
 
-
-    async getProducts(update: boolean): Promise<AlkoholResponseDto> {
+    async getProducts(update: boolean, page: number, pageSize: number): Promise<AlkoholResponseDto> {
         if (update) {
             const productsFromApi = await this.fetchProductsFromApi();
             await this.saveProductsToDb(productsFromApi);
         }
-        const productsFromDb = await this.prisma.alkohol.findMany({
-            where: { category: 'alkohol' }, // Add this line
-            include: { promotions: true },
-            orderBy: { lastUpdated: 'desc' }
-        });
+        const [productsFromDb, totalProducts] = await this.prisma.$transaction([
+            this.prisma.alkohol.findMany({
+                where: { category: 'alkohol' },
+                include: { promotions: true },
+                orderBy: { lastUpdated: 'desc' },
+                skip: (page - 1) * pageSize,
+                take: pageSize
+            }),
+            this.prisma.alkohol.count({
+                where: { category: 'alkohol' }
+            })
+        ]);
+
         const transformedProducts = productsFromDb.map(product => ({
             productId: product.productId,
             title: product.title,
@@ -172,8 +179,9 @@ export class AlkoholService {
             })),
             lastUpdated: product.lastUpdated
         }));
+
         return {
-            totalProducts: transformedProducts.length,
+            totalProducts,
             products: transformedProducts
         };
     }
