@@ -91,6 +91,7 @@ export class AlkoholService {
                 aisleName: product.aisleName,
                 superDepartmentName: product.superDepartmentName,
                 promotions,
+                hasPromotions: promotions.length > 0,
                 lastUpdated: new Date()
             };
         });
@@ -112,6 +113,7 @@ export class AlkoholService {
                         aisleName: product.aisleName,
                         category: 'alkohol',
                         superDepartmentName: product.superDepartmentName,
+                        hasPromotions: product.hasPromotions,
                         promotions: {
                             create: product.promotions.map(promo => ({
                                 promotionId: promo.promotionId,
@@ -139,12 +141,12 @@ export class AlkoholService {
         }
 
         const whereClause: any = { category: 'alkohol' };
+
+        // Assuming `sale` is a string that can be "true" or "false"
         if (sale !== undefined) {
-            if (sale) {
-                whereClause.promotions = { some: {} };
-            } else {
-                whereClause.promotions = { none: {} };
-            }
+            // Convert string to boolean
+            const saleBoolean = String(sale).toLowerCase() === 'true';
+            whereClause.hasPromotions = saleBoolean;
         }
 
         const [productsFromDb, totalProducts] = await this.prisma.$transaction([
@@ -180,6 +182,7 @@ export class AlkoholService {
                 offerText: promo.offerText,
                 attributes: promo.attributes
             })),
+            hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated,
         }));
 
@@ -188,6 +191,11 @@ export class AlkoholService {
             totalProducts,
             products: transformedProducts
         };
+    }
+
+    async updateProductsFromApi(): Promise<void> {
+        const productsFromApi = await this.fetchProductsFromApi();
+        await this.saveProductsToDb(productsFromApi);
     }
 
     async getProductById(productId: string): Promise<AlkoholTransformedProductDto[]> {
@@ -214,6 +222,7 @@ export class AlkoholService {
                 offerText: promo.offerText,
                 attributes: promo.attributes
             })),
+            hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated
         }));
     }

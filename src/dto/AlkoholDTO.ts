@@ -19,6 +19,7 @@ export class AlkoholTransformedProductDto {
     promotions: PromotionDto[];
     lastUpdated: Date;
     superDepartmentName: string;
+    hasPromotions: boolean; // Add this line
 }
 
 export class AlkoholResponseDto {

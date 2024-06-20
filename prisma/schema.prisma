@@ -183,6 +183,7 @@ model Alkohol {
   lastUpdated         DateTime
   category            String
   superDepartmentName String
+  hasPromotions       Boolean
 
   @@unique([productId, lastUpdated])
 }
