@@ -16,9 +16,7 @@ export class MrazenePotravinyService {
         this.cookies = ''; // Initialize cookies
     }
 
-
     private async fetchProductsFromApi(): Promise<MrazenePotravinyTransformedProductDto[]> {
-
         const url = 'https://potravinydomov.itesco.sk/groceries/sk-SK/resources';
         const headers = { ...defaultHeaders }
 
@@ -64,6 +62,11 @@ export class MrazenePotravinyService {
         return allProducts;
     }
 
+    private extractPromotionPrice(offerText: string): number | null {
+        const match = offerText.match(/S Clubcard ([0-9,.]+) €/);
+        return match ? parseFloat(match[1].replace(',', '.')) : null;
+    }
+
     private transformData(data: any): MrazenePotravinyTransformedProductDto[] {
         const productItems = data.productsByCategory.data.results.productItems;
 
@@ -79,7 +82,8 @@ export class MrazenePotravinyService {
                 startDate: promo.startDate,
                 endDate: promo.endDate,
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: this.extractPromotionPrice(promo.offerText) // Extract the promotion price
             })) || [];
 
             return {
@@ -98,7 +102,6 @@ export class MrazenePotravinyService {
             };
         });
     }
-
 
     private async saveProductsToDb(products: MrazenePotravinyTransformedProductDto[]) {
         for (const product of products) {
@@ -124,7 +127,8 @@ export class MrazenePotravinyService {
                                 startDate: new Date(promo.startDate),
                                 endDate: new Date(promo.endDate),
                                 offerText: promo.offerText,
-                                attributes: promo.attributes
+                                attributes: promo.attributes,
+                                promotionPrice: promo.promotionPrice // Save the promotion price
                             }))
                         },
                         lastUpdated: new Date()
@@ -136,7 +140,6 @@ export class MrazenePotravinyService {
             }
         }
     }
-
 
     async getProducts(update: boolean, page: number, pageSize: number, sale?: boolean): Promise<MrazenePotravinyResponseDto> {
         if (update) {
@@ -184,7 +187,8 @@ export class MrazenePotravinyService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated,
@@ -208,6 +212,7 @@ export class MrazenePotravinyService {
             include: { promotions: true },
             orderBy: { lastUpdated: 'desc' }
         });
+
         return productsFromDb.map(product => ({
             productId: product.productId,
             title: product.title,
@@ -224,15 +229,11 @@ export class MrazenePotravinyService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated
         }));
     }
-
-
-
-
-
 }

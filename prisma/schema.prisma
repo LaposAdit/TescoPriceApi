@@ -204,6 +204,7 @@ model Promotion {
   startDate                DateTime
   endDate                  DateTime
   offerText                String
+  promotionPrice           Float? // Add this line
   attributes               String[]
   ovocieAZeleniny          OvocieAZeleniny?        @relation(fields: [ovocieAZeleninyId], references: [id])
   ovocieAZeleninyId        Int?

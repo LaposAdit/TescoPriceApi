@@ -5,7 +5,6 @@ import { PrismaService } from 'src/prisma.service';
 import { defaultHeaders } from 'src/common/header';
 import { PromotionDto, SpecialnaAZdravaVyzivaResponseDto, SpecialnaAZdravaVyzivaTransformedProductDto } from 'src/dto/SpecialnaAZdravaVyzivaDTO';
 
-
 @Injectable()
 export class SpecialnaAZdravaVyzivaService {
     private cookies: string;
@@ -17,9 +16,7 @@ export class SpecialnaAZdravaVyzivaService {
         this.cookies = ''; // Initialize cookies
     }
 
-
     private async fetchProductsFromApi(): Promise<SpecialnaAZdravaVyzivaTransformedProductDto[]> {
-
         const url = 'https://potravinydomov.itesco.sk/groceries/sk-SK/resources';
         const headers = { ...defaultHeaders }
 
@@ -65,6 +62,11 @@ export class SpecialnaAZdravaVyzivaService {
         return allProducts;
     }
 
+    private extractPromotionPrice(offerText: string): number | null {
+        const match = offerText.match(/S Clubcard ([0-9,.]+) €/);
+        return match ? parseFloat(match[1].replace(',', '.')) : null;
+    }
+
     private transformData(data: any): SpecialnaAZdravaVyzivaTransformedProductDto[] {
         const productItems = data.productsByCategory.data.results.productItems;
 
@@ -80,7 +82,8 @@ export class SpecialnaAZdravaVyzivaService {
                 startDate: promo.startDate,
                 endDate: promo.endDate,
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: this.extractPromotionPrice(promo.offerText) // Extract the promotion price
             })) || [];
 
             return {
@@ -99,10 +102,6 @@ export class SpecialnaAZdravaVyzivaService {
             };
         });
     }
-
-
-
-    //specialna-a-zdrava-vyziva
 
     private async saveProductsToDb(products: SpecialnaAZdravaVyzivaTransformedProductDto[]) {
         for (const product of products) {
@@ -128,7 +127,8 @@ export class SpecialnaAZdravaVyzivaService {
                                 startDate: new Date(promo.startDate),
                                 endDate: new Date(promo.endDate),
                                 offerText: promo.offerText,
-                                attributes: promo.attributes
+                                attributes: promo.attributes,
+                                promotionPrice: promo.promotionPrice // Save the promotion price
                             }))
                         },
                         lastUpdated: new Date()
@@ -187,7 +187,8 @@ export class SpecialnaAZdravaVyzivaService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated,
@@ -211,6 +212,7 @@ export class SpecialnaAZdravaVyzivaService {
             include: { promotions: true },
             orderBy: { lastUpdated: 'desc' }
         });
+
         return productsFromDb.map(product => ({
             productId: product.productId,
             title: product.title,
@@ -227,14 +229,11 @@ export class SpecialnaAZdravaVyzivaService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated
         }));
     }
-
-
-
-
 }

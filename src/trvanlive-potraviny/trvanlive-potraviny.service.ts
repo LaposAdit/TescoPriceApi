@@ -2,10 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from 'src/prisma.service';
-import { OvocieAZeleninyResponseDto, OvocieAZeleninyTransformedProductDto, PromotionDto } from 'src/dto/ovocie-a-zeleniny-response.dto';
+import { TrvanlivePotravinyResponseDto, TrvanlivePotravinyTransformedProductDto, PromotionDto } from 'src/dto/trvanlive-potravinyDTO';
 import { defaultHeaders } from 'src/common/header';
-import { TrvanlivePotravinyResponseDto, TrvanlivePotravinyTransformedProductDto } from 'src/dto/trvanlive-potravinyDTO';
-
 
 @Injectable()
 export class TrvanlivePotravinyService {
@@ -18,9 +16,7 @@ export class TrvanlivePotravinyService {
         this.cookies = ''; // Initialize cookies
     }
 
-
     private async fetchProductsFromApi(): Promise<TrvanlivePotravinyTransformedProductDto[]> {
-
         const url = 'https://potravinydomov.itesco.sk/groceries/sk-SK/resources';
         const headers = { ...defaultHeaders }
 
@@ -63,8 +59,12 @@ export class TrvanlivePotravinyService {
             }
         }
 
-
         return allProducts;
+    }
+
+    private extractPromotionPrice(offerText: string): number | null {
+        const match = offerText.match(/S Clubcard ([0-9,.]+) €/);
+        return match ? parseFloat(match[1].replace(',', '.')) : null;
     }
 
     private transformData(data: any): TrvanlivePotravinyTransformedProductDto[] {
@@ -82,7 +82,8 @@ export class TrvanlivePotravinyService {
                 startDate: promo.startDate,
                 endDate: promo.endDate,
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: this.extractPromotionPrice(promo.offerText) // Extract the promotion price
             })) || [];
 
             return {
@@ -101,7 +102,7 @@ export class TrvanlivePotravinyService {
             };
         });
     }
-    //trvanlive-potraviny
+
     private async saveProductsToDb(products: TrvanlivePotravinyTransformedProductDto[]) {
         for (const product of products) {
             try {
@@ -126,7 +127,8 @@ export class TrvanlivePotravinyService {
                                 startDate: new Date(promo.startDate),
                                 endDate: new Date(promo.endDate),
                                 offerText: promo.offerText,
-                                attributes: promo.attributes
+                                attributes: promo.attributes,
+                                promotionPrice: promo.promotionPrice // Save the promotion price
                             }))
                         },
                         lastUpdated: new Date()
@@ -185,7 +187,8 @@ export class TrvanlivePotravinyService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated,
@@ -209,6 +212,7 @@ export class TrvanlivePotravinyService {
             include: { promotions: true },
             orderBy: { lastUpdated: 'desc' }
         });
+
         return productsFromDb.map(product => ({
             productId: product.productId,
             title: product.title,
@@ -225,14 +229,11 @@ export class TrvanlivePotravinyService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated
         }));
     }
-
-
-
-
 }

@@ -18,7 +18,6 @@ export class MliecneVyrobkyAVajciaService {
     }
 
     private async fetchProductsFromApi(): Promise<MliecneVyrobkyAVajciaTransformedProductDto[]> {
-
         const url = 'https://potravinydomov.itesco.sk/groceries/sk-SK/resources';
         const headers = { ...defaultHeaders };
 
@@ -64,6 +63,11 @@ export class MliecneVyrobkyAVajciaService {
         return allProducts;
     }
 
+    private extractPromotionPrice(offerText: string): number | null {
+        const match = offerText.match(/S Clubcard ([0-9,.]+) €/);
+        return match ? parseFloat(match[1].replace(',', '.')) : null;
+    }
+
     private transformData(data: any): MliecneVyrobkyAVajciaTransformedProductDto[] {
         const productItems = data.productsByCategory.data.results.productItems;
 
@@ -79,7 +83,8 @@ export class MliecneVyrobkyAVajciaService {
                 startDate: promo.startDate,
                 endDate: promo.endDate,
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: this.extractPromotionPrice(promo.offerText) // Extract the promotion price
             })) || [];
 
             return {
@@ -98,7 +103,6 @@ export class MliecneVyrobkyAVajciaService {
             };
         });
     }
-
 
     private async saveProductsToDb(products: MliecneVyrobkyAVajciaTransformedProductDto[]) {
         for (const product of products) {
@@ -124,7 +128,8 @@ export class MliecneVyrobkyAVajciaService {
                                 startDate: new Date(promo.startDate),
                                 endDate: new Date(promo.endDate),
                                 offerText: promo.offerText,
-                                attributes: promo.attributes
+                                attributes: promo.attributes,
+                                promotionPrice: promo.promotionPrice // Save the promotion price
                             }))
                         },
                         lastUpdated: new Date()
@@ -183,7 +188,8 @@ export class MliecneVyrobkyAVajciaService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated,
@@ -196,7 +202,6 @@ export class MliecneVyrobkyAVajciaService {
         };
     }
 
-
     async updateProductsFromApi(): Promise<void> {
         const productsFromApi = await this.fetchProductsFromApi();
         await this.saveProductsToDb(productsFromApi);
@@ -208,6 +213,7 @@ export class MliecneVyrobkyAVajciaService {
             include: { promotions: true },
             orderBy: { lastUpdated: 'desc' }
         });
+
         return productsFromDb.map(product => ({
             productId: product.productId,
             title: product.title,
@@ -224,11 +230,11 @@ export class MliecneVyrobkyAVajciaService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated
         }));
     }
-
 }

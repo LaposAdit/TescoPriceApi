@@ -18,7 +18,6 @@ export class MasoRybyALahodkyService {
     }
 
     private async fetchProductsFromApi(): Promise<MasoRybyALahodkyTransformedProductDto[]> {
-
         const url = 'https://potravinydomov.itesco.sk/groceries/sk-SK/resources';
         const headers = { ...defaultHeaders };
 
@@ -64,6 +63,11 @@ export class MasoRybyALahodkyService {
         return allProducts;
     }
 
+    private extractPromotionPrice(offerText: string): number | null {
+        const match = offerText.match(/S Clubcard ([0-9,.]+) €/);
+        return match ? parseFloat(match[1].replace(',', '.')) : null;
+    }
+
     private transformData(data: any): MasoRybyALahodkyTransformedProductDto[] {
         const productItems = data.productsByCategory.data.results.productItems;
 
@@ -79,7 +83,8 @@ export class MasoRybyALahodkyService {
                 startDate: promo.startDate,
                 endDate: promo.endDate,
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: this.extractPromotionPrice(promo.offerText) // Extract the promotion price
             })) || [];
 
             return {
@@ -98,7 +103,6 @@ export class MasoRybyALahodkyService {
             };
         });
     }
-
 
     private async saveProductsToDb(products: MasoRybyALahodkyTransformedProductDto[]) {
         for (const product of products) {
@@ -124,7 +128,8 @@ export class MasoRybyALahodkyService {
                                 startDate: new Date(promo.startDate),
                                 endDate: new Date(promo.endDate),
                                 offerText: promo.offerText,
-                                attributes: promo.attributes
+                                attributes: promo.attributes,
+                                promotionPrice: promo.promotionPrice // Save the promotion price
                             }))
                         },
                         lastUpdated: new Date()
@@ -136,9 +141,6 @@ export class MasoRybyALahodkyService {
             }
         }
     }
-
-
-
 
     async getProducts(update: boolean, page: number, pageSize: number, sale?: boolean): Promise<MasoRybyALahodkyResponseDto> {
         if (update) {
@@ -186,7 +188,8 @@ export class MasoRybyALahodkyService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated,
@@ -204,13 +207,13 @@ export class MasoRybyALahodkyService {
         await this.saveProductsToDb(productsFromApi);
     }
 
-
     async getProductById(productId: string): Promise<MasoRybyALahodkyTransformedProductDto[]> {
         const productsFromDb = await this.prisma.masoRybyALahodky.findMany({
             where: { productId },
             include: { promotions: true },
             orderBy: { lastUpdated: 'desc' }
         });
+
         return productsFromDb.map(product => ({
             productId: product.productId,
             title: product.title,
@@ -227,7 +230,8 @@ export class MasoRybyALahodkyService {
                 startDate: promo.startDate.toISOString(),
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
-                attributes: promo.attributes
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated

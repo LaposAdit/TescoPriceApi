@@ -5,6 +5,7 @@ export class PromotionDto {
     endDate: string;
     offerText: string;
     attributes: string[];
+    promotionPrice: number | null; // Add this line
 }
 
 export class PecivoTransformedProductDto {
