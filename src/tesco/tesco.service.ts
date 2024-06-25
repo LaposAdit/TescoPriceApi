@@ -72,6 +72,7 @@ export class TescoService {
                 endDate: promo.endDate.toISOString(),
                 offerText: promo.offerText,
                 attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice, // Include promotionPrice here
             })),
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated,
@@ -86,6 +87,33 @@ export class TescoService {
 
     async getProductById(category: ProductCategory, productId: string): Promise<any[]> {
         const model = this.getPrismaModel(category);
-        return model.findMany({ where: { productId } });
+        const productsFromDb = await model.findMany({
+            where: { productId },
+            include: { promotions: true },
+            orderBy: { lastUpdated: 'desc' }
+        });
+
+        return productsFromDb.map(product => ({
+            productId: product.productId,
+            title: product.title,
+            price: product.price,
+            unitPrice: product.unitPrice,
+            imageUrl: product.imageUrl,
+            unitOfMeasure: product.unitOfMeasure,
+            isForSale: product.isForSale,
+            aisleName: product.aisleName,
+            superDepartmentName: product.superDepartmentName,
+            promotions: product.promotions.map(promo => ({
+                promotionId: promo.promotionId,
+                promotionType: promo.promotionType,
+                startDate: promo.startDate.toISOString(),
+                endDate: promo.endDate.toISOString(),
+                offerText: promo.offerText,
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice, // Include promotionPrice here
+            })),
+            hasPromotions: product.promotions.length > 0,
+            lastUpdated: product.lastUpdated,
+        }));
     }
 }
