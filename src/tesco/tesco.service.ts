@@ -42,20 +42,26 @@ export class TescoService {
         const model = this.getPrismaModel(category);
         const where = this.createWhereClause(sale);
 
-        const [productsFromDb, totalProducts] = await this.prisma.$transaction([
-            model.findMany({
-                where,
-                skip,
-                take,
-                include: { promotions: true },
-                orderBy: { lastUpdated: 'desc' },
-            }),
-            model.count({ where }),
-        ]);
-
+        // Fetch distinct product IDs for counting
+        const distinctProductIds = await model.findMany({
+            where,
+            select: { productId: true },
+            distinct: ['productId']
+        });
+        const totalProducts = distinctProductIds.length;
         const totalPages = Math.ceil(totalProducts / pageSize);
 
-        const transformedProducts = productsFromDb.map((product: any) => ({
+        // Fetch the latest products based on the distinct product IDs
+        const latestProducts = await model.findMany({
+            where,
+            skip,
+            take,
+            include: { promotions: true },
+            orderBy: { lastUpdated: 'desc' },
+            distinct: ['productId'], // Ensure only the latest product for each productId is returned
+        });
+
+        const transformedProducts = latestProducts.map((product: any) => ({
             productId: product.productId,
             title: product.title,
             price: product.price,
