@@ -23,10 +23,12 @@ import { NapojeController } from './napoje/napoje.controller';
 import { NapojeService } from './napoje/napoje.service';
 import { AlkoholController } from './alkohol/alkohol.controller';
 import { AlkoholService } from './alkohol/alkohol.service';
+import { TescoController } from './tesco/tesco.controller';
+import { TescoService } from './tesco/tesco.service';
 
 @Module({
   imports: [HttpModule],
-  controllers: [AppController, OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController],
-  providers: [AppService, OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService],
+  controllers: [AppController, OvocieAZeleninyController, GrilovanieController, MliecneVyrobkyAVajciaController, PecivoController, MasoRybyALahodkyController, TrvanlivePotravinyController, SpecialnaAZdravaVyzivaController, MrazenePotravinyController, NapojeController, AlkoholController, TescoController],
+  providers: [AppService, OvocieAZeleninyService, GrilovanieService, PrismaService, MliecneVyrobkyAVajciaService, PecivoService, MasoRybyALahodkyService, TrvanlivePotravinyService, SpecialnaAZdravaVyzivaService, MrazenePotravinyService, NapojeService, AlkoholService, TescoService],
 })
 export class AppModule { }
