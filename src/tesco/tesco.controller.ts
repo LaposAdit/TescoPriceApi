@@ -42,13 +42,23 @@ export class TescoController {
     }
 
     @ApiOperation({ summary: 'Search products by name' })
+    @ApiQuery({ name: 'searchTerm', required: true, description: 'Search term for product title' })
+    @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number, example: 1 })
+    @ApiQuery({ name: 'pageSize', required: false, description: 'Number of items per page', type: Number, example: 25 })
+    @ApiQuery({ name: 'sale', required: false, description: 'Filter by sale', type: Boolean })
+    @ApiQuery({ name: 'category', required: false, enum: ProductCategory, description: 'Product category' })
     @ApiResponse({ status: 200, description: 'List of products matching the search term' })
     @Get('search')
     async searchProductsByName(
         @Query('searchTerm') searchTerm: string,
+        @Query('page') page = 1,
+        @Query('pageSize') pageSize = 25,
+        @Query('sale') sale?: string,
+        @Query('category') category?: ProductCategory,
     ) {
         console.log("Search request received with term:", searchTerm);
-        return this.service.searchProductsByName(searchTerm);
+        const saleBoolean = sale === 'true' ? true : sale === 'false' ? false : undefined;
+        return this.service.searchProductsByName(searchTerm, page, pageSize, saleBoolean, category);
     }
 
     @Get(':category/:productId')

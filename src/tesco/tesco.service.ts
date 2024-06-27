@@ -127,38 +127,56 @@ export class TescoService {
         }));
     }
 
-    private async searchModelForTerm(model: any, searchTerm: string) {
-        return model.findMany({
-            where: {
-                title: {
-                    contains: searchTerm,
-                    mode: 'insensitive',
-                },
+    private async searchModelForTerm(model: any, searchTerm: string, sale?: boolean) {
+        const where: Record<string, any> = {
+            title: {
+                contains: searchTerm,
+                mode: 'insensitive',
             },
+        };
+        if (sale !== undefined) {
+            where['hasPromotions'] = sale;
+        }
+
+        return model.findMany({
+            where,
             include: { promotions: true },
             orderBy: { lastUpdated: 'desc' }
         });
     }
 
-    async searchProductsByName(searchTerm: string): Promise<any> {
-        const modelMapping: Record<string, any> = {
-            trvanlivePotraviny: this.prisma.trvanlivePotraviny,
-            specialnaAZdravaVyziva: this.prisma.specialnaAZdravaVyziva,
-            pecivo: this.prisma.pecivo,
-            ovocieAZeleniny: this.prisma.ovocieAZeleniny,
-            napoje: this.prisma.napoje,
-            mrazenePotraviny: this.prisma.mrazenePotraviny,
-            mliecneVyrobkyAVajcia: this.prisma.mliecneVyrobkyAVajcia,
-            masoRybyALahodky: this.prisma.masoRybyALahodky,
-            grilovanie: this.prisma.grilovanie,
-            alkohol: this.prisma.alkohol,
-        };
-        const searchPromises = Object.values(modelMapping).map(model => this.searchModelForTerm(model, searchTerm));
+    async searchProductsByName(searchTerm: string, page: number, pageSize: number, sale?: boolean, category?: string): Promise<any> {
+        let models;
+
+        if (category) {
+            models = [this.getPrismaModel(category)];
+        } else {
+            models = [
+                this.prisma.trvanlivePotraviny,
+                this.prisma.specialnaAZdravaVyziva,
+                this.prisma.pecivo,
+                this.prisma.ovocieAZeleniny,
+                this.prisma.napoje,
+                this.prisma.mrazenePotraviny,
+                this.prisma.mliecneVyrobkyAVajcia,
+                this.prisma.masoRybyALahodky,
+                this.prisma.grilovanie,
+                this.prisma.alkohol,
+            ];
+        }
+
+        const searchPromises = models.map(model => this.searchModelForTerm(model, searchTerm, sale));
 
         const searchResults = await Promise.all(searchPromises);
         const productsFromDb = searchResults.flat();
 
-        const transformedProducts = productsFromDb.map((product: any) => ({
+        const totalProducts = productsFromDb.length;
+        const totalPages = Math.ceil(totalProducts / pageSize);
+        const skip = (page - 1) * pageSize;
+
+        const paginatedProducts = productsFromDb.slice(skip, skip + pageSize);
+
+        const transformedProducts = paginatedProducts.map((product: any) => ({
             productId: product.productId,
             title: product.title,
             price: product.price,
@@ -181,6 +199,10 @@ export class TescoService {
             lastUpdated: product.lastUpdated,
         }));
 
-        return transformedProducts;
+        return {
+            totalPages,
+            totalProducts,
+            products: transformedProducts,
+        };
     }
 }
