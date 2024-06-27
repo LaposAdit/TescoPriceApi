@@ -1,26 +1,30 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { ProductCategory } from '../enum/product-category.enum';
 
 @Injectable()
 export class TescoService {
     constructor(private readonly prisma: PrismaService) { }
 
-    private getPrismaModel(category: ProductCategory) {
-        const modelMapping: Record<ProductCategory, any> = {
-            [ProductCategory.TrvanlivePotraviny]: this.prisma.trvanlivePotraviny,
-            [ProductCategory.SpecialnaAZdravaVyziva]: this.prisma.specialnaAZdravaVyziva,
-            [ProductCategory.Pecivo]: this.prisma.pecivo,
-            [ProductCategory.OvocieAZeleniny]: this.prisma.ovocieAZeleniny,
-            [ProductCategory.Napoje]: this.prisma.napoje,
-            [ProductCategory.MrazenePotraviny]: this.prisma.mrazenePotraviny,
-            [ProductCategory.MliecneVyrobkyAVajcia]: this.prisma.mliecneVyrobkyAVajcia,
-            [ProductCategory.MasoRybyALahodky]: this.prisma.masoRybyALahodky,
-            [ProductCategory.Grilovanie]: this.prisma.grilovanie,
-            [ProductCategory.Alkohol]: this.prisma.alkohol,
+    private getPrismaModel(category: string) {
+        const modelMapping: Record<string, any> = {
+            trvanlivePotraviny: this.prisma.trvanlivePotraviny,
+            specialnaAZdravaVyziva: this.prisma.specialnaAZdravaVyziva,
+            pecivo: this.prisma.pecivo,
+            ovocieAZeleniny: this.prisma.ovocieAZeleniny,
+            napoje: this.prisma.napoje,
+            mrazenePotraviny: this.prisma.mrazenePotraviny,
+            mliecneVyrobkyAVajcia: this.prisma.mliecneVyrobkyAVajcia,
+            masoRybyALahodky: this.prisma.masoRybyALahodky,
+            grilovanie: this.prisma.grilovanie,
+            alkohol: this.prisma.alkohol,
         };
 
-        return modelMapping[category];
+        const model = modelMapping[category];
+        if (!model) {
+            throw new NotFoundException(`Model for category ${category} not found`);
+        }
+
+        return model;
     }
 
     private createWhereClause(sale?: boolean) {
@@ -32,7 +36,7 @@ export class TescoService {
     }
 
     async getProducts(
-        category: ProductCategory,
+        category: string,
         page: number,
         pageSize: number,
         sale?: boolean
@@ -91,7 +95,7 @@ export class TescoService {
         };
     }
 
-    async getProductById(category: ProductCategory, productId: string): Promise<any[]> {
+    async getProductById(category: string, productId: string): Promise<any[]> {
         const model = this.getPrismaModel(category);
         const productsFromDb = await model.findMany({
             where: { productId },
@@ -121,5 +125,62 @@ export class TescoService {
             hasPromotions: product.promotions.length > 0,
             lastUpdated: product.lastUpdated,
         }));
+    }
+
+    private async searchModelForTerm(model: any, searchTerm: string) {
+        return model.findMany({
+            where: {
+                title: {
+                    contains: searchTerm,
+                    mode: 'insensitive',
+                },
+            },
+            include: { promotions: true },
+            orderBy: { lastUpdated: 'desc' }
+        });
+    }
+
+    async searchProductsByName(searchTerm: string): Promise<any> {
+        const modelMapping: Record<string, any> = {
+            trvanlivePotraviny: this.prisma.trvanlivePotraviny,
+            specialnaAZdravaVyziva: this.prisma.specialnaAZdravaVyziva,
+            pecivo: this.prisma.pecivo,
+            ovocieAZeleniny: this.prisma.ovocieAZeleniny,
+            napoje: this.prisma.napoje,
+            mrazenePotraviny: this.prisma.mrazenePotraviny,
+            mliecneVyrobkyAVajcia: this.prisma.mliecneVyrobkyAVajcia,
+            masoRybyALahodky: this.prisma.masoRybyALahodky,
+            grilovanie: this.prisma.grilovanie,
+            alkohol: this.prisma.alkohol,
+        };
+        const searchPromises = Object.values(modelMapping).map(model => this.searchModelForTerm(model, searchTerm));
+
+        const searchResults = await Promise.all(searchPromises);
+        const productsFromDb = searchResults.flat();
+
+        const transformedProducts = productsFromDb.map((product: any) => ({
+            productId: product.productId,
+            title: product.title,
+            price: product.price,
+            unitPrice: product.unitPrice,
+            imageUrl: product.imageUrl,
+            unitOfMeasure: product.unitOfMeasure,
+            isForSale: product.isForSale,
+            aisleName: product.aisleName,
+            superDepartmentName: product.superDepartmentName,
+            promotions: product.promotions.map((promo: any) => ({
+                promotionId: promo.promotionId,
+                promotionType: promo.promotionType,
+                startDate: promo.startDate.toISOString(),
+                endDate: promo.endDate.toISOString(),
+                offerText: promo.offerText,
+                attributes: promo.attributes,
+                promotionPrice: promo.promotionPrice,
+            })),
+            hasPromotions: product.promotions.length > 0,
+            lastUpdated: product.lastUpdated,
+        }));
+
+        return transformedProducts;
     }
 }

@@ -1,5 +1,5 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ApiResponse, ApiTags, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Query, Param } from '@nestjs/common';
+import { ApiResponse, ApiTags, ApiQuery, ApiOperation } from '@nestjs/swagger';
 import { ProductCategory } from 'src/enum/product-category.enum';
 import { TescoService } from './tesco.service';
 import { GenericResponse } from 'src/dto/Tesco-ResponsDTO';
@@ -41,9 +41,19 @@ export class TescoController {
         }
     }
 
-    @Get(':productId')
+    @ApiOperation({ summary: 'Search products by name' })
+    @ApiResponse({ status: 200, description: 'List of products matching the search term' })
+    @Get('search')
+    async searchProductsByName(
+        @Query('searchTerm') searchTerm: string,
+    ) {
+        console.log("Search request received with term:", searchTerm);
+        return this.service.searchProductsByName(searchTerm);
+    }
+
+    @Get(':category/:productId')
     @ApiResponse({ status: 200, description: 'The product history has been successfully fetched from the database.', type: Object })
-    async getProductById(@Param('productId') productId: string, @Query('category') category: ProductCategory): Promise<any[]> {
+    async getProductById(@Param('category') category: ProductCategory, @Param('productId') productId: string): Promise<any[]> {
         return this.service.getProductById(category, productId);
     }
 }

@@ -7,6 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  productId String
+  category  String
+  createdAt DateTime @default(now())
+}
+
 model OvocieAZeleniny {
   id                  Int         @id @default(autoincrement())
   productId           String
