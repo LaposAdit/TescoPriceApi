@@ -59,7 +59,7 @@ export class TescoService {
         const availableCategories: Set<string> = new Set(allCategories);
 
         if (category === 'all') {
-            // Fetch from all categories
+            // Fetch from all categories without pagination first
             const models: Array<{ model: keyof PrismaService, category: string }> = [
                 { model: 'trvanlivePotraviny', category: 'trvanlivePotraviny' },
                 { model: 'specialnaAZdravaVyziva', category: 'specialnaAZdravaVyziva' },
@@ -106,7 +106,7 @@ export class TescoService {
             }
 
             const totalPages = Math.ceil(totalProducts / pageSize);
-            const paginatedProducts = allResults.slice(skip, skip + pageSize);
+            const paginatedProducts = allResults.slice(skip, skip + take); // Paginate the combined results
 
             const transformedProducts = paginatedProducts.map((product: any) => ({
                 dbId: product.id, // Add dbId here
